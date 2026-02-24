@@ -42,6 +42,10 @@ const server = Bun.serve({
         if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
           throw new ValidationError("title is required");
         }
+        const VALID_PRIORITIES = ["low", "medium", "high", "critical"];
+        if (body.priority !== undefined && !VALID_PRIORITIES.includes(body.priority)) {
+          throw new ValidationError("priority must be one of: low, medium, high, critical");
+        }
         const task = TaskModel.create(body);
         return Response.json({ data: task }, { status: 201 });
       }
