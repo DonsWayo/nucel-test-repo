@@ -47,6 +47,10 @@ server = Bun.serve({
         if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
           throw new ValidationError("title is required");
         }
+        const VALID_PRIORITIES = ["low", "medium", "high", "critical"];
+        if (body.priority !== undefined && !VALID_PRIORITIES.includes(body.priority)) {
+          throw new ValidationError("priority must be one of: low, medium, high, critical");
+        }
         const task = TaskModel.create(body);
         return Response.json({ data: task }, { status: 201 });
       }
@@ -121,6 +125,30 @@ describe("Task API", () => {
         body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
+    });
+
+    it("rejects invalid priority", async () => {
+      const res = await fetch(`${BASE}/api/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Test", priority: "urgent" }),
+      });
+      expect(res.status).toBe(400);
+      const { error } = await res.json();
+      expect(error).toContain("priority must be one of");
+    });
+
+    it("accepts all valid priorities", async () => {
+      for (const priority of ["low", "medium", "high", "critical"]) {
+        const res = await fetch(`${BASE}/api/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: `Task ${priority}`, priority }),
+        });
+        expect(res.status).toBe(201);
+        const { data } = await res.json();
+        expect(data.priority).toBe(priority);
+      }
     });
   });
 
