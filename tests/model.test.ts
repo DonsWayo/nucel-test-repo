@@ -18,6 +18,18 @@ describe("Task Model", () => {
     expect(task.description).toBe("");
     expect(task.id).toBeTruthy();
     expect(task.createdAt).toBeTruthy();
+    expect(task.dueDate).toBeUndefined();
+  });
+
+  it("creates a task with a dueDate", () => {
+    const task = TaskModel.create({ title: "Due soon", dueDate: "2026-03-01" });
+    expect(task.dueDate).toBe("2026-03-01");
+  });
+
+  it("updates a task's dueDate", () => {
+    const task = TaskModel.create({ title: "Has due date" });
+    const updated = TaskModel.update(task.id, { dueDate: "2026-04-15" });
+    expect(updated.dueDate).toBe("2026-04-15");
   });
 
   it("creates tasks with incrementing IDs", () => {
