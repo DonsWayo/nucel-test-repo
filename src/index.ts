@@ -59,6 +59,10 @@ const server = Bun.serve({
           return Response.json({ data: TaskModel.get(id) });
         }
         if (method === "PUT") {
+          const VALID_STATUSES = ["todo", "in_progress", "done"];
+          if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+            throw new ValidationError("status must be one of: todo, in_progress, done");
+          }
           const task = TaskModel.update(id, body);
           return Response.json({ data: task });
         }
