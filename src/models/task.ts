@@ -6,6 +6,7 @@ export interface Task {
   description: string;
   priority: "low" | "medium" | "high" | "critical";
   status: "todo" | "in_progress" | "done";
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +35,7 @@ export function create(data: {
   title: string;
   description?: string;
   priority?: Task["priority"];
+  dueDate?: string;
 }): Task {
   const task: Task = {
     id: nextId++,
@@ -41,6 +43,7 @@ export function create(data: {
     description: data.description ?? "",
     priority: data.priority ?? "medium",
     status: "todo",
+    dueDate: data.dueDate,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -50,10 +53,10 @@ export function create(data: {
 
 export function update(
   id: number | string,
-  fields: Partial<Pick<Task, "title" | "description" | "priority" | "status">>,
+  fields: Partial<Pick<Task, "title" | "description" | "priority" | "status" | "dueDate">>,
 ): Task {
   const task = get(id);
-  const allowed = ["title", "description", "priority", "status"] as const;
+  const allowed = ["title", "description", "priority", "status", "dueDate"] as const;
   for (const key of allowed) {
     if (fields[key] !== undefined) {
       (task as any)[key] = fields[key];

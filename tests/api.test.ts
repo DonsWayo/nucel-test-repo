@@ -105,6 +105,17 @@ describe("Task API", () => {
       expect(data.status).toBe("todo");
     });
 
+    it("creates a task with dueDate", async () => {
+      const res = await fetch(`${BASE}/api/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Due task", dueDate: "2026-03-01" }),
+      });
+      expect(res.status).toBe(201);
+      const { data } = await res.json();
+      expect(data.dueDate).toBe("2026-03-01");
+    });
+
     it("rejects empty title", async () => {
       const res = await fetch(`${BASE}/api/tasks`, {
         method: "POST",
@@ -209,6 +220,23 @@ describe("Task API", () => {
       const { data } = await res.json();
       expect(data.title).toBe("Updated");
       expect(data.status).toBe("in_progress");
+    });
+
+    it("updates a task's dueDate", async () => {
+      const created = await (
+        await fetch(`${BASE}/api/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Task with due date" }),
+        })
+      ).json();
+      const res = await fetch(`${BASE}/api/tasks/${created.data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dueDate: "2026-04-15" }),
+      });
+      const { data } = await res.json();
+      expect(data.dueDate).toBe("2026-04-15");
     });
   });
 
