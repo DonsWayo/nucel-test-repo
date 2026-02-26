@@ -47,6 +47,10 @@ server = Bun.serve({
         if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
           throw new ValidationError("title is required");
         }
+        const VALID_STATUSES = ["todo", "in_progress", "done"];
+        if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+          throw new ValidationError("status must be one of: todo, in_progress, done");
+        }
         const task = TaskModel.create(body);
         return Response.json({ data: task }, { status: 201 });
       }
@@ -59,7 +63,13 @@ server = Bun.serve({
       if (taskMatch) {
         const id = taskMatch[1];
         if (method === "GET") return Response.json({ data: TaskModel.get(id) });
-        if (method === "PUT") return Response.json({ data: TaskModel.update(id, body) });
+        if (method === "PUT") {
+          const VALID_STATUSES = ["todo", "in_progress", "done"];
+          if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+            throw new ValidationError("status must be one of: todo, in_progress, done");
+          }
+          return Response.json({ data: TaskModel.update(id, body) });
+        }
         if (method === "DELETE") return Response.json({ data: TaskModel.remove(id), message: "Task deleted" });
       }
 
@@ -121,6 +131,28 @@ describe("Task API", () => {
         body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
+    });
+
+    it("rejects invalid status", async () => {
+      const res = await fetch(`${BASE}/api/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Test", status: "invalid" }),
+      });
+      expect(res.status).toBe(400);
+      const { error } = await res.json();
+      expect(error).toContain("status must be one of");
+    });
+
+    it("accepts all valid statuses", async () => {
+      for (const status of ["todo", "in_progress", "done"]) {
+        const res = await fetch(`${BASE}/api/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: `Task ${status}`, status }),
+        });
+        expect(res.status).toBe(201);
+      }
     });
   });
 
@@ -209,6 +241,44 @@ describe("Task API", () => {
       const { data } = await res.json();
       expect(data.title).toBe("Updated");
       expect(data.status).toBe("in_progress");
+    });
+
+    it("rejects invalid status on update", async () => {
+      const created = await (
+        await fetch(`${BASE}/api/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Test" }),
+        })
+      ).json();
+      const res = await fetch(`${BASE}/api/tasks/${created.data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "invalid" }),
+      });
+      expect(res.status).toBe(400);
+      const { error } = await res.json();
+      expect(error).toContain("status must be one of");
+    });
+
+    it("accepts valid status on update", async () => {
+      const created = await (
+        await fetch(`${BASE}/api/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Test" }),
+        })
+      ).json();
+      for (const status of ["todo", "in_progress", "done"]) {
+        const res = await fetch(`${BASE}/api/tasks/${created.data.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+        expect(res.status).toBe(200);
+        const { data } = await res.json();
+        expect(data.status).toBe(status);
+      }
     });
   });
 
